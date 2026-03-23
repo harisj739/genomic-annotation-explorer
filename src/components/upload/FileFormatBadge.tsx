@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import type { SupportedFormat } from '../../types/genomic'
-import { formatNumber } from '../../utils/formatting'
 import { SavedFilesMenu } from '../files/SavedFilesMenu'
 import { useGenomicStore } from '../../store/useGenomicStore'
 
@@ -14,10 +13,9 @@ const FORMAT_COLORS: Record<SupportedFormat, string> = {
 interface FileFormatBadgeProps {
   format: SupportedFormat
   fileName: string
-  featureCount: number
 }
 
-export function FileFormatBadge({ format, fileName, featureCount }: FileFormatBadgeProps) {
+export function FileFormatBadge({ format, fileName }: FileFormatBadgeProps) {
   const [open, setOpen] = useState(false)
   const savedFiles = useGenomicStore((s) => s.savedFiles)
   const hasSaved = savedFiles.length > 0
@@ -51,10 +49,6 @@ export function FileFormatBadge({ format, fileName, featureCount }: FileFormatBa
         </button>
         {open && <SavedFilesMenu onClose={() => setOpen(false)} className="top-full left-0" />}
       </div>
-
-      <span className="text-sm text-gray-500">
-        {formatNumber(featureCount)} features
-      </span>
     </div>
   )
 }

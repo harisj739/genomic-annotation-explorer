@@ -100,7 +100,7 @@ function NewFileModal({ onClose }: { onClose: () => void }) {
 
 export default function App() {
   const { status, fileName, format, stats, error, warnings, savedFiles } = useGenomicStore()
-  const { hidden, resetLayout, aiWidgets } = useDashboardStore()
+  const { hidden, resetLayout, aiWidgets, isHidden } = useDashboardStore()
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
@@ -208,7 +208,7 @@ export default function App() {
             {/* File info bar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3">
-                <FileFormatBadge format={format} fileName={fileName} featureCount={stats.totalFeatures} />
+                <FileFormatBadge format={format} fileName={fileName} />
                 {hidden.length > 0 && (
                   <button
                     onClick={resetLayout}
@@ -259,7 +259,18 @@ export default function App() {
                     onClick={() => setVizOpen((o) => !o)}
                     aria-expanded={vizOpen}
                   >
-                    <h2 className="text-base font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">Visualizations</h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-base font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">Visualizations</h2>
+                      {!vizOpen && (() => {
+                        const BASE_KEYS = ['chart-featuretype','chart-chromosome','chart-histogram','chart-strand','chart-coverage'] as const
+                        const count = BASE_KEYS.filter((k) => !isHidden(k)).length + aiWidgets.length
+                        return count > 0 ? (
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold">
+                            {count}
+                          </span>
+                        ) : null
+                      })()}
+                    </div>
                     <svg
                       className={`w-4 h-4 text-gray-400 transition-transform ${vizOpen ? 'rotate-180' : ''}`}
                       fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}

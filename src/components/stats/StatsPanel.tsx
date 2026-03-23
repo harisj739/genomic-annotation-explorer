@@ -76,7 +76,17 @@ export function StatsPanel() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
       >
-        <h2 className="text-base font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">Summary</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">Summary</h2>
+          {!open && (() => {
+            const count = visibleCards.length + (strandHidden ? 0 : 1)
+            return count > 0 ? (
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-blue-500 text-white text-[10px] font-bold">
+                {count}
+              </span>
+            ) : null
+          })()}
+        </div>
         <Caret open={open} />
       </button>
 
