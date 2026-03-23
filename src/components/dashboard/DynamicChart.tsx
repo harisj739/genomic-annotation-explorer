@@ -45,7 +45,7 @@ interface DynamicChartProps {
 
 export function DynamicChart({ widget }: DynamicChartProps) {
   const data = useNormalizedData(widget)
-  const { removeAIWidget, customizing } = useDashboardStore()
+  const { removeAIWidget } = useDashboardStore()
 
   const fmt = (v: TooltipValue) => valueFormatter(widget.dataKey, v)
 
@@ -137,14 +137,19 @@ export function DynamicChart({ widget }: DynamicChartProps) {
         </span>
       </div>
       {inner()}
-      {/* Remove button — always shown for AI widgets, more prominent in customize mode */}
-      <button
-        onClick={() => removeAIWidget(widget.id)}
-        className={`absolute top-3 right-14 text-xs text-red-400 hover:text-red-600 px-2 py-0.5 rounded-full hover:bg-red-50 transition-all cursor-pointer ${customizing ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus:opacity-100'}`}
-        aria-label={`Remove ${widget.title}`}
-      >
-        Remove
-      </button>
+      {/* Remove button */}
+      <div className="group/hide absolute top-2 right-2 z-10 flex items-center gap-1.5">
+        <span className="text-xs font-medium text-gray-700 bg-white/95 rounded px-1.5 py-0.5 shadow-sm opacity-0 group-hover/hide:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          Hide
+        </span>
+        <button
+          onClick={() => removeAIWidget(widget.id)}
+          className="w-5 h-5 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow cursor-pointer transition-colors"
+          aria-label={`Remove ${widget.title}`}
+        >
+          <span className="block w-2.5 h-[2px] bg-white rounded-full" />
+        </button>
+      </div>
     </div>
   )
 }

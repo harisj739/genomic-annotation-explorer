@@ -19,7 +19,7 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner'
 import { Button } from './components/ui/Button'
 import { FileHistory } from './components/files/FileHistory'
 
-// Wraps a chart panel with hide-on-hover overlay in customize mode
+// Wraps a chart panel with a persistent red hide button in the top-right corner
 function HidableChart({
   panelKey,
   fullWidth = false,
@@ -29,37 +29,34 @@ function HidableChart({
   fullWidth?: boolean
   children: React.ReactNode
 }) {
-  const { isHidden, customizing, toggleHidden } = useDashboardStore()
+  const { isHidden, toggleHidden } = useDashboardStore()
   if (isHidden(panelKey)) return null
   return (
-    <div className={`relative group ${fullWidth ? 'lg:col-span-2' : ''}`}>
+    <div className={`relative ${fullWidth ? 'lg:col-span-2' : ''}`}>
       {children}
-      {customizing && (
+      <div className="group/hide absolute top-2 right-2 z-10 flex items-center gap-1.5">
+        <span className="text-xs font-medium text-gray-700 bg-white/95 rounded px-1.5 py-0.5 shadow-sm opacity-0 group-hover/hide:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+          Hide
+        </span>
         <button
           onClick={() => toggleHidden(panelKey)}
-          className="absolute inset-0 z-10 flex items-center justify-center bg-red-500/10 border-2 border-red-400 border-dashed rounded-xl opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity cursor-pointer"
+          className="w-5 h-5 rounded-full bg-red-500 hover:bg-red-600 flex items-center justify-center shadow cursor-pointer transition-colors"
           aria-label="Hide this chart"
         >
-          <span className="text-xs font-semibold text-red-600 bg-white px-2 py-0.5 rounded-full shadow">
-            Hide
-          </span>
+          <span className="block w-2.5 h-[2px] bg-white rounded-full" />
         </button>
-      )}
+      </div>
     </div>
   )
 }
 
 export default function App() {
   const { status, fileName, format, stats, error, warnings, reset } = useGenomicStore()
-  const { customizing, setCustomizing, hidden, resetLayout, aiWidgets } = useDashboardStore()
+  const { hidden, resetLayout, aiWidgets } = useDashboardStore()
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
 
-  const chartPanelKeys: PanelKey[] = [
-    'chart-featuretype', 'chart-chromosome', 'chart-histogram', 'chart-strand', 'chart-coverage',
-  ]
-  const hiddenChartCount = chartPanelKeys.filter((k) => hidden.includes(k)).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -78,17 +75,9 @@ export default function App() {
               Glossary
             </Button>
             {status === 'done' && (
-              <>
-                <Button
-                  variant="ghost"
-                  onClick={() => setCustomizing(!customizing)}
-                >
-                  {customizing ? 'Done' : 'Customize'}
-                </Button>
-                <Button variant="ghost" onClick={reset}>
-                  New file
-                </Button>
-              </>
+              <Button variant="ghost" onClick={reset}>
+                New file
+              </Button>
             )}
           </div>
         </div>
@@ -133,7 +122,17 @@ export default function App() {
           <>
             {/* File info bar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <FileFormatBadge format={format} fileName={fileName} featureCount={stats.totalFeatures} />
+              <div className="flex flex-wrap items-center gap-3">
+                <FileFormatBadge format={format} fileName={fileName} featureCount={stats.totalFeatures} />
+                {hidden.length > 0 && (
+                  <button
+                    onClick={resetLayout}
+                    className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold text-white bg-gray-700 hover:bg-gray-800 transition-colors cursor-pointer"
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-3">
                 {warnings.length > 0 && (
                   <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
@@ -156,18 +155,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Customize mode banner */}
-            {customizing && (
-              <div className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 flex items-center justify-between">
-                <span>Hover over any stat or chart and click <strong>Hide</strong> to remove it from the dashboard.</span>
-                {hidden.length > 0 && (
-                  <button onClick={resetLayout} className="ml-4 underline cursor-pointer shrink-0">
-                    Reset layout
-                  </button>
-                )}
-              </div>
-            )}
-
             {/* Empty result */}
             {stats.totalFeatures === 0 && (
               <div className="text-center py-12 text-gray-400">
@@ -182,17 +169,7 @@ export default function App() {
 
                 {/* Visualizations */}
                 <section aria-label="Visualizations">
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-base font-semibold text-gray-700">Visualizations</h2>
-                    {hiddenChartCount > 0 && !customizing && (
-                      <button
-                        onClick={resetLayout}
-                        className="text-xs text-blue-500 hover:text-blue-700 cursor-pointer"
-                      >
-                        {hiddenChartCount} hidden · Reset layout
-                      </button>
-                    )}
-                  </div>
+                  <h2 className="text-base font-semibold text-gray-700 mb-3">Visualizations</h2>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <HidableChart panelKey="chart-featuretype">
                       <FeatureTypeChart data={chartData.featureTypes} />
