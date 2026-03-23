@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useGenomicStore } from './store/useGenomicStore'
+import { useDashboardStore } from './store/useDashboardStore'
+import type { PanelKey } from './store/useDashboardStore'
 import { useChartData } from './hooks/useChartData'
 import { UploadZone } from './components/upload/UploadZone'
 import { FileFormatBadge } from './components/upload/FileFormatBadge'
@@ -9,6 +11,7 @@ import { ChromosomeChart } from './components/charts/ChromosomeChart'
 import { LengthHistogram } from './components/charts/LengthHistogram'
 import { StrandPieChart } from './components/charts/StrandPieChart'
 import { CoverageChart } from './components/charts/CoverageChart'
+import { DynamicChart } from './components/dashboard/DynamicChart'
 import { GlossaryDrawer } from './components/education/GlossaryDrawer'
 import { ChatPanel } from './components/chat/ChatPanel'
 import { ErrorBanner } from './components/ui/ErrorBanner'
@@ -16,11 +19,47 @@ import { LoadingSpinner } from './components/ui/LoadingSpinner'
 import { Button } from './components/ui/Button'
 import { FileHistory } from './components/files/FileHistory'
 
+// Wraps a chart panel with hide-on-hover overlay in customize mode
+function HidableChart({
+  panelKey,
+  fullWidth = false,
+  children,
+}: {
+  panelKey: PanelKey
+  fullWidth?: boolean
+  children: React.ReactNode
+}) {
+  const { isHidden, customizing, toggleHidden } = useDashboardStore()
+  if (isHidden(panelKey)) return null
+  return (
+    <div className={`relative group ${fullWidth ? 'lg:col-span-2' : ''}`}>
+      {children}
+      {customizing && (
+        <button
+          onClick={() => toggleHidden(panelKey)}
+          className="absolute inset-0 z-10 flex items-center justify-center bg-red-500/10 border-2 border-red-400 border-dashed rounded-xl opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity cursor-pointer"
+          aria-label="Hide this chart"
+        >
+          <span className="text-xs font-semibold text-red-600 bg-white px-2 py-0.5 rounded-full shadow">
+            Hide
+          </span>
+        </button>
+      )}
+    </div>
+  )
+}
+
 export default function App() {
   const { status, fileName, format, stats, error, warnings, reset } = useGenomicStore()
+  const { customizing, setCustomizing, hidden, resetLayout, aiWidgets } = useDashboardStore()
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+
+  const chartPanelKeys: PanelKey[] = [
+    'chart-featuretype', 'chart-chromosome', 'chart-histogram', 'chart-strand', 'chart-coverage',
+  ]
+  const hiddenChartCount = chartPanelKeys.filter((k) => hidden.includes(k)).length
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -39,14 +78,20 @@ export default function App() {
               Glossary
             </Button>
             {status === 'done' && (
-              <Button variant="ghost" onClick={() => setChatOpen(true)}>
-                Ask Genny
-              </Button>
-            )}
-            {status === 'done' && (
-              <Button variant="ghost" onClick={reset}>
-                New file
-              </Button>
+              <>
+                <Button variant="ghost" onClick={() => setChatOpen(true)}>
+                  Ask Genny
+                </Button>
+                <Button
+                  variant="ghost"
+                  onClick={() => setCustomizing(!customizing)}
+                >
+                  {customizing ? 'Done' : 'Customize'}
+                </Button>
+                <Button variant="ghost" onClick={reset}>
+                  New file
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -91,11 +136,7 @@ export default function App() {
           <>
             {/* File info bar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <FileFormatBadge
-                format={format}
-                fileName={fileName}
-                featureCount={stats.totalFeatures}
-              />
+              <FileFormatBadge format={format} fileName={fileName} featureCount={stats.totalFeatures} />
               {warnings.length > 0 && (
                 <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
                   {warnings.length} parse warning{warnings.length > 1 ? 's' : ''}
@@ -107,6 +148,18 @@ export default function App() {
             {stats.totalFeatures > 500_000 && (
               <div className="text-xs text-blue-600 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
                 Large file: {stats.totalFeatures.toLocaleString()} features loaded. Charts may render more slowly.
+              </div>
+            )}
+
+            {/* Customize mode banner */}
+            {customizing && (
+              <div className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-lg px-4 py-2 flex items-center justify-between">
+                <span>Hover over any stat or chart and click <strong>Hide</strong> to remove it from the dashboard.</span>
+                {hidden.length > 0 && (
+                  <button onClick={resetLayout} className="ml-4 underline cursor-pointer shrink-0">
+                    Reset layout
+                  </button>
+                )}
               </div>
             )}
 
@@ -122,18 +175,51 @@ export default function App() {
               <>
                 <StatsPanel />
 
+                {/* Visualizations */}
                 <section aria-label="Visualizations">
-                  <h2 className="text-base font-semibold text-gray-700 mb-3">Visualizations</h2>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-base font-semibold text-gray-700">Visualizations</h2>
+                    {hiddenChartCount > 0 && !customizing && (
+                      <button
+                        onClick={resetLayout}
+                        className="text-xs text-blue-500 hover:text-blue-700 cursor-pointer"
+                      >
+                        {hiddenChartCount} hidden · Reset layout
+                      </button>
+                    )}
+                  </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <FeatureTypeChart data={chartData.featureTypes} />
-                    <ChromosomeChart data={chartData.chromosomes} />
-                    <LengthHistogram data={chartData.lengthHistogram} />
-                    <StrandPieChart data={chartData.strandData} />
-                    <div className="lg:col-span-2">
+                    <HidableChart panelKey="chart-featuretype">
+                      <FeatureTypeChart data={chartData.featureTypes} />
+                    </HidableChart>
+                    <HidableChart panelKey="chart-chromosome">
+                      <ChromosomeChart data={chartData.chromosomes} />
+                    </HidableChart>
+                    <HidableChart panelKey="chart-histogram">
+                      <LengthHistogram data={chartData.lengthHistogram} />
+                    </HidableChart>
+                    <HidableChart panelKey="chart-strand">
+                      <StrandPieChart data={chartData.strandData} />
+                    </HidableChart>
+                    <HidableChart panelKey="chart-coverage" fullWidth>
                       <CoverageChart data={chartData.coverage} />
-                    </div>
+                    </HidableChart>
                   </div>
                 </section>
+
+                {/* Genny-generated widgets */}
+                {aiWidgets.length > 0 && (
+                  <section aria-label="Genny widgets">
+                    <h2 className="text-base font-semibold text-gray-700 mb-3">
+                      Genny's Charts
+                    </h2>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {aiWidgets.map((widget) => (
+                        <DynamicChart key={widget.id} widget={widget} />
+                      ))}
+                    </div>
+                  </section>
+                )}
 
                 <FileHistory defaultOpen={false} />
               </>

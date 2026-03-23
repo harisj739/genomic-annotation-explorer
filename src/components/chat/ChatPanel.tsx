@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import Anthropic from '@anthropic-ai/sdk'
 import { useChatStore } from '../../store/useChatStore'
 import { useGenomicStore } from '../../store/useGenomicStore'
+import { useDashboardStore } from '../../store/useDashboardStore'
+import type { DataKey, ChartType } from '../../store/useDashboardStore'
 import { ChatMessage } from './ChatMessage'
 import { formatNumber, formatBp } from '../../utils/formatting'
 import type { GenomicStats, SupportedFormat } from '../../types/genomic'
@@ -13,28 +15,18 @@ interface ChatPanelProps {
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
-function buildSystemPrompt(
-  fileName: string,
-  format: SupportedFormat,
-  stats: GenomicStats,
-): string {
+function buildSystemPrompt(fileName: string, format: SupportedFormat, stats: GenomicStats): string {
   const topChroms = stats.uniqueChromosomes.slice(0, 10).join(', ')
-  const moreChromsNote =
-    stats.uniqueChromosomes.length > 10
-      ? ` (and ${stats.uniqueChromosomes.length - 10} more)`
-      : ''
+  const moreChromsNote = stats.uniqueChromosomes.length > 10
+    ? ` (and ${stats.uniqueChromosomes.length - 10} more)` : ''
 
   const featureTypes = Object.entries(stats.featureTypeCounts)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 15)
-    .map(([k, v]) => `${k}: ${formatNumber(v)}`)
-    .join(', ')
+    .sort(([, a], [, b]) => b - a).slice(0, 15)
+    .map(([k, v]) => `${k}: ${formatNumber(v)}`).join(', ')
 
   const topCoverage = Object.entries(stats.coverageByChrom)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 5)
-    .map(([k, v]) => `${k}: ${formatBp(v)}`)
-    .join(', ')
+    .sort(([, a], [, b]) => b - a).slice(0, 5)
+    .map(([k, v]) => `${k}: ${formatBp(v)}`).join(', ')
 
   return `You are Genny, an AI genomic annotation assistant embedded in the Genome Annotation Explorer app.
 
@@ -52,27 +44,80 @@ FILE CONTEXT:
 INSTRUCTIONS:
 - You are Genny. Be helpful, precise, and educational about genomic annotation data.
 - ONLY answer questions directly related to the file described above and its data.
-- If asked anything unrelated to this file or genomics in general that is not about this file, politely decline and remind the user you can only discuss the loaded file.
+- If asked anything unrelated to this file, politely decline and remind the user you can only discuss the loaded file.
 - Use correct bioinformatics terminology and explain terms when it helps the user understand.
-- Keep responses concise and focused.`
+- Keep responses concise and focused.
+
+CHART CREATION:
+When the user asks you to create, add, or generate a chart or visualization, include a JSON block using this exact format (and nothing else before the block):
+
+###CHART_START###
+{"title":"Human-readable chart title","dataKey":"featureTypes","chartType":"horizontal-bar"}
+###CHART_END###
+
+Then add a brief text sentence after the block confirming what you created.
+
+Available dataKey values:
+- "featureTypes" — counts per feature type (exon, gene, transcript, etc.)
+- "chromosomes"  — feature counts per chromosome
+- "strandData"   — strand distribution (+/−/unknown)
+- "coverage"     — base-pair coverage per chromosome
+- "lengthHistogram" — feature length distribution in bins
+
+Available chartType values:
+- "vertical-bar"   — vertical bar chart (good for chromosomes, small datasets)
+- "horizontal-bar" — horizontal bar chart (good for feature types, many categories)
+- "pie"            — pie/donut chart (good for strand distribution, proportions)
+- "area"           — area chart (good for coverage across chromosomes)
+- "histogram"      — histogram bars (good for length distribution)
+
+Choose the most appropriate chartType for the data. Example: if asked for "a pie chart of chromosomes", use dataKey "chromosomes" and chartType "pie".`
+}
+
+// ── Chart extraction ──────────────────────────────────────────────────────────
+
+interface ChartSpec {
+  title: string
+  dataKey: DataKey
+  chartType: ChartType
+}
+
+const VALID_DATA_KEYS: DataKey[] = ['featureTypes', 'chromosomes', 'strandData', 'coverage', 'lengthHistogram']
+const VALID_CHART_TYPES: ChartType[] = ['vertical-bar', 'horizontal-bar', 'pie', 'area', 'histogram']
+
+function extractChartSpec(text: string): { spec: ChartSpec | null; cleanText: string } {
+  const match = text.match(/###CHART_START###\s*([\s\S]*?)\s*###CHART_END###/)
+  if (!match) return { spec: null, cleanText: text }
+
+  const cleanText = text.replace(/###CHART_START###[\s\S]*?###CHART_END###\s*/g, '').trim()
+
+  try {
+    const parsed = JSON.parse(match[1])
+    if (
+      typeof parsed.title === 'string' &&
+      VALID_DATA_KEYS.includes(parsed.dataKey) &&
+      VALID_CHART_TYPES.includes(parsed.chartType)
+    ) {
+      return { spec: parsed as ChartSpec, cleanText }
+    }
+  } catch {
+    // malformed JSON — ignore the chart, show text only
+  }
+  return { spec: null, cleanText }
 }
 
 // ── Intro message ─────────────────────────────────────────────────────────────
 
-function buildIntroMessage(
-  fileName: string,
-  format: SupportedFormat,
-  stats: GenomicStats,
-): string {
-  return `Hi! I'm Genny, your genomic annotation assistant. 🧬\n\nI've loaded **${fileName}** (${format} format) — it contains ${formatNumber(stats.totalFeatures)} features across ${stats.uniqueChromosomes.length} chromosome${stats.uniqueChromosomes.length !== 1 ? 's' : ''}.\n\nAsk me anything about this file!`
+function buildIntroMessage(fileName: string, format: SupportedFormat, stats: GenomicStats): string {
+  return `Hi! I'm Genny, your genomic annotation assistant. 🧬\n\nI've loaded **${fileName}** (${format} format) — it contains ${formatNumber(stats.totalFeatures)} features across ${stats.uniqueChromosomes.length} chromosome${stats.uniqueChromosomes.length !== 1 ? 's' : ''}.\n\nAsk me anything about this file, or say "Create a chart of…" to add a custom visualization to your dashboard!`
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export function ChatPanel({ open, onClose }: ChatPanelProps) {
-  const { messages, apiKey, isLoading, error, addMessage, setApiKey, setLoading, setError, clearMessages } =
-    useChatStore()
+  const { messages, apiKey, isLoading, error, addMessage, setApiKey, setLoading, setError, clearMessages } = useChatStore()
   const { stats, fileName, format } = useGenomicStore()
+  const { addAIWidget } = useDashboardStore()
 
   const [input, setInput] = useState('')
   const [keyDraft, setKeyDraft] = useState('')
@@ -83,21 +128,19 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
   // ESC to close
   useEffect(() => {
     if (!open) return
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [open, onClose])
 
-  // Show intro message when panel first opens (no messages yet)
+  // Show intro message on first open
   useEffect(() => {
     if (open && messages.length === 0 && stats && fileName && format) {
       addMessage('assistant', buildIntroMessage(fileName, format, stats))
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Clear messages when the file changes
+  // Clear messages when file changes
   useEffect(() => {
     clearMessages()
   }, [fileName]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -114,10 +157,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
 
   async function sendMessage() {
     if (!input.trim() || isLoading || !stats || !fileName || !format) return
-    if (!apiKey) {
-      setShowKeyInput(true)
-      return
-    }
+    if (!apiKey) { setShowKeyInput(true); return }
 
     const userText = input.trim()
     setInput('')
@@ -139,9 +179,15 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
         messages: apiMessages,
       })
 
-      const text =
-        response.content[0]?.type === 'text' ? response.content[0].text : '(no response)'
-      addMessage('assistant', text)
+      const rawText = response.content[0]?.type === 'text' ? response.content[0].text : '(no response)'
+
+      // Extract chart spec if present
+      const { spec, cleanText } = extractChartSpec(rawText)
+      if (spec) {
+        addAIWidget({ title: spec.title, dataKey: spec.dataKey, chartType: spec.chartType })
+      }
+
+      addMessage('assistant', cleanText || rawText)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
       setError(`Failed to reach Genny: ${msg}`)
@@ -151,10 +197,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage()
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() }
   }
 
   function saveApiKey() {
@@ -166,20 +209,12 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
 
   return (
     <>
-      {/* Backdrop */}
       {open && (
-        <div
-          className="fixed inset-0 bg-black/30 z-40 transition-opacity"
-          onClick={onClose}
-          aria-hidden
-        />
+        <div className="fixed inset-0 bg-black/30 z-40 transition-opacity" onClick={onClose} aria-hidden />
       )}
 
-      {/* Drawer */}
       <aside
-        className={`fixed top-0 right-0 h-full w-full max-w-md bg-gray-50 z-50 shadow-2xl flex flex-col transform transition-transform duration-300 ${
-          open ? 'translate-x-0' : 'translate-x-full'
-        }`}
+        className={`fixed top-0 right-0 h-full w-full max-w-md bg-gray-50 z-50 shadow-2xl flex flex-col transform transition-transform duration-300 ${open ? 'translate-x-0' : 'translate-x-full'}`}
         aria-label="Genny AI assistant"
       >
         {/* Header */}
@@ -209,7 +244,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
           </div>
         </div>
 
-        {/* API key input (collapsible) */}
+        {/* API key input */}
         {showKeyInput && (
           <div className="shrink-0 bg-amber-50 border-b border-amber-200 px-5 py-3 space-y-2">
             <p className="text-xs text-amber-700 font-medium">Enter your Anthropic API key</p>
@@ -243,7 +278,6 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
             <ChatMessage key={msg.id} message={msg} />
           ))}
 
-          {/* Loading indicator */}
           {isLoading && (
             <div className="flex items-start gap-1">
               <div className="bg-white border border-gray-200 rounded-2xl rounded-bl-sm px-4 py-3 shadow-sm">
@@ -256,7 +290,6 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
               {error}
@@ -279,7 +312,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Ask about this file… (Enter to send)"
+              placeholder='Ask about this file, or "Create a pie chart of chromosomes…"'
               rows={2}
               disabled={isLoading || !apiKey}
               className="flex-1 resize-none text-sm border border-gray-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-400 disabled:bg-gray-50 disabled:text-gray-400"
