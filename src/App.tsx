@@ -56,6 +56,7 @@ export default function App() {
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
+  const [vizOpen, setVizOpen] = useState(true)
 
 
   return (
@@ -169,8 +170,20 @@ export default function App() {
 
                 {/* Visualizations */}
                 <section aria-label="Visualizations">
-                  <h2 className="text-base font-semibold text-gray-700 mb-3">Visualizations</h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <button
+                    className="w-full flex items-center justify-between mb-3 cursor-pointer group"
+                    onClick={() => setVizOpen((o) => !o)}
+                    aria-expanded={vizOpen}
+                  >
+                    <h2 className="text-base font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">Visualizations</h2>
+                    <svg
+                      className={`w-4 h-4 text-gray-400 transition-transform ${vizOpen ? 'rotate-180' : ''}`}
+                      fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {vizOpen && <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     <HidableChart panelKey="chart-featuretype">
                       <FeatureTypeChart data={chartData.featureTypes} />
                     </HidableChart>
@@ -186,7 +199,7 @@ export default function App() {
                     <HidableChart panelKey="chart-coverage" fullWidth>
                       <CoverageChart data={chartData.coverage} />
                     </HidableChart>
-                  </div>
+                  </div>}
                 </section>
 
                 {/* Genny-generated widgets */}

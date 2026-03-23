@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useGenomicStore } from '../../store/useGenomicStore'
 import { useDashboardStore } from '../../store/useDashboardStore'
 import type { PanelKey } from '../../store/useDashboardStore'
@@ -23,9 +24,19 @@ function HideButton({ panelKey }: { panelKey: PanelKey }) {
   )
 }
 
+const Caret = ({ open }: { open: boolean }) => (
+  <svg
+    className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`}
+    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+  </svg>
+)
+
 export function StatsPanel() {
   const stats = useGenomicStore((s) => s.stats)
   const { isHidden } = useDashboardStore()
+  const [open, setOpen] = useState(true)
   if (!stats) return null
 
   const topTypes = Object.entries(stats.featureTypeCounts)
@@ -60,32 +71,43 @@ export function StatsPanel() {
 
   return (
     <section aria-label="Summary statistics">
-      <h2 className="text-base font-semibold text-gray-700 mb-3">Summary</h2>
+      <button
+        className="w-full flex items-center justify-between mb-3 cursor-pointer group"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+      >
+        <h2 className="text-base font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">Summary</h2>
+        <Caret open={open} />
+      </button>
 
-      {visibleCards.length > 0 && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
-          {statCards.map(({ key, el }) =>
-            isHidden(key) ? null : (
-              <div key={key} className="relative">
-                {el}
-                <HideButton panelKey={key} />
-              </div>
-            )
+      {open && (
+        <>
+          {visibleCards.length > 0 && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
+              {statCards.map(({ key, el }) =>
+                isHidden(key) ? null : (
+                  <div key={key} className="relative">
+                    {el}
+                    <HideButton panelKey={key} />
+                  </div>
+                )
+              )}
+            </div>
           )}
-        </div>
-      )}
 
-      {!strandHidden && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div className="relative">
-            <StrandTable
-              plus={stats.strandCounts.plus}
-              minus={stats.strandCounts.minus}
-              unknown={stats.strandCounts.unknown}
-            />
-            <HideButton panelKey="stat-strand" />
-          </div>
-        </div>
+          {!strandHidden && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="relative">
+                <StrandTable
+                  plus={stats.strandCounts.plus}
+                  minus={stats.strandCounts.minus}
+                  unknown={stats.strandCounts.unknown}
+                />
+                <HideButton panelKey="stat-strand" />
+              </div>
+            </div>
+          )}
+        </>
       )}
     </section>
   )
