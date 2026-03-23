@@ -10,6 +10,7 @@ import { LengthHistogram } from './components/charts/LengthHistogram'
 import { StrandPieChart } from './components/charts/StrandPieChart'
 import { CoverageChart } from './components/charts/CoverageChart'
 import { GlossaryDrawer } from './components/education/GlossaryDrawer'
+import { ChatPanel } from './components/chat/ChatPanel'
 import { ErrorBanner } from './components/ui/ErrorBanner'
 import { LoadingSpinner } from './components/ui/LoadingSpinner'
 import { Button } from './components/ui/Button'
@@ -19,6 +20,7 @@ export default function App() {
   const { status, fileName, format, stats, error, warnings, reset } = useGenomicStore()
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,6 +38,11 @@ export default function App() {
             <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
               Glossary
             </Button>
+            {status === 'done' && (
+              <Button variant="ghost" onClick={() => setChatOpen(true)}>
+                Ask Genneth
+              </Button>
+            )}
             {status === 'done' && (
               <Button variant="ghost" onClick={reset}>
                 New file
@@ -136,6 +143,7 @@ export default function App() {
       </main>
 
       <GlossaryDrawer open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
+      <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   )
 }
