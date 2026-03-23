@@ -36,7 +36,7 @@ function buildSystemPrompt(
     .map(([k, v]) => `${k}: ${formatBp(v)}`)
     .join(', ')
 
-  return `You are Genneth, an AI genomic annotation assistant embedded in the Genome Annotation Explorer app.
+  return `You are Genny, an AI genomic annotation assistant embedded in the Genome Annotation Explorer app.
 
 FILE CONTEXT:
 - File name: ${fileName}
@@ -50,7 +50,7 @@ FILE CONTEXT:
 - Top coverage by chromosome: ${topCoverage}
 
 INSTRUCTIONS:
-- You are Genneth. Be helpful, precise, and educational about genomic annotation data.
+- You are Genny. Be helpful, precise, and educational about genomic annotation data.
 - ONLY answer questions directly related to the file described above and its data.
 - If asked anything unrelated to this file or genomics in general that is not about this file, politely decline and remind the user you can only discuss the loaded file.
 - Use correct bioinformatics terminology and explain terms when it helps the user understand.
@@ -64,7 +64,7 @@ function buildIntroMessage(
   format: SupportedFormat,
   stats: GenomicStats,
 ): string {
-  return `Hi! I'm Genneth, your genomic annotation assistant. 🧬\n\nI've loaded **${fileName}** (${format} format) — it contains ${formatNumber(stats.totalFeatures)} features across ${stats.uniqueChromosomes.length} chromosome${stats.uniqueChromosomes.length !== 1 ? 's' : ''}.\n\nAsk me anything about this file!`
+  return `Hi! I'm Genny, your genomic annotation assistant. 🧬\n\nI've loaded **${fileName}** (${format} format) — it contains ${formatNumber(stats.totalFeatures)} features across ${stats.uniqueChromosomes.length} chromosome${stats.uniqueChromosomes.length !== 1 ? 's' : ''}.\n\nAsk me anything about this file!`
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -144,7 +144,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
       addMessage('assistant', text)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
-      setError(`Failed to reach Genneth: ${msg}`)
+      setError(`Failed to reach Genny: ${msg}`)
     } finally {
       setLoading(false)
     }
@@ -180,14 +180,14 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
         className={`fixed top-0 right-0 h-full w-full max-w-md bg-gray-50 z-50 shadow-2xl flex flex-col transform transition-transform duration-300 ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
-        aria-label="Genneth AI assistant"
+        aria-label="Genny AI assistant"
       >
         {/* Header */}
         <div className="shrink-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg" aria-hidden>🧬</span>
             <div>
-              <h2 className="text-sm font-semibold text-gray-900 leading-tight">Genneth</h2>
+              <h2 className="text-sm font-semibold text-gray-900 leading-tight">Genny</h2>
               <p className="text-xs text-gray-400">AI genomic assistant</p>
             </div>
           </div>
@@ -270,7 +270,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
         <div className="shrink-0 bg-white border-t border-gray-100 px-4 py-3">
           {!apiKey && (
             <p className="text-xs text-amber-600 mb-2 text-center">
-              Add your Anthropic API key above to chat with Genneth.
+              Add your Anthropic API key above to chat with Genny.
             </p>
           )}
           <div className="flex gap-2 items-end">
@@ -294,7 +294,7 @@ export function ChatPanel({ open, onClose }: ChatPanelProps) {
             </button>
           </div>
           <p className="text-xs text-gray-300 mt-1.5 text-center">
-            Shift+Enter for new line · Genneth only discusses the loaded file
+            Shift+Enter for new line · Genny only discusses the loaded file
           </p>
         </div>
       </aside>

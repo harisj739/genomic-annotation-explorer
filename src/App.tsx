@@ -40,7 +40,7 @@ export default function App() {
             </Button>
             {status === 'done' && (
               <Button variant="ghost" onClick={() => setChatOpen(true)}>
-                Ask Genneth
+                Ask Genny
               </Button>
             )}
             {status === 'done' && (
