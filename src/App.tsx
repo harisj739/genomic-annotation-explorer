@@ -131,24 +131,22 @@ export default function App() {
         {/* Done state */}
         {status === 'done' && stats && chartData && format && fileName && (
           <>
-            {/* Ask Genny button */}
-            <div>
-              <button
-                onClick={() => setChatOpen(true)}
-                className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 active:from-indigo-700 active:to-purple-700 shadow-sm hover:shadow-md transition-all cursor-pointer select-none"
-              >
-                ✨ Ask Genny
-              </button>
-            </div>
-
             {/* File info bar */}
             <div className="flex flex-wrap items-center justify-between gap-3">
               <FileFormatBadge format={format} fileName={fileName} featureCount={stats.totalFeatures} />
-              {warnings.length > 0 && (
-                <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
-                  {warnings.length} parse warning{warnings.length > 1 ? 's' : ''}
-                </span>
-              )}
+              <div className="flex flex-wrap items-center gap-3">
+                {warnings.length > 0 && (
+                  <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-3 py-1">
+                    {warnings.length} parse warning{warnings.length > 1 ? 's' : ''}
+                  </span>
+                )}
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 active:from-indigo-700 active:to-purple-700 shadow-sm hover:shadow-md transition-all cursor-pointer select-none"
+                >
+                  ✨ Ask Genny
+                </button>
+              </div>
             </div>
 
             {/* Large file notice */}
