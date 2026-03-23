@@ -217,7 +217,7 @@ export default function App() {
         {status === 'done' && stats && chartData && format && fileName && (
           <>
             {/* File info bar */}
-            <div className="bg-gradient-to-r from-blue-100 via-teal-50 to-emerald-100 border border-teal-200/60 rounded-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+            <div className="bg-gradient-to-r from-blue-300 via-teal-200 to-emerald-300 border border-teal-400/60 rounded-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
               <div className="flex flex-wrap items-center gap-3">
                 <FileFormatBadge format={format} fileName={fileName} />
                 {hidden.length > 0 && (
