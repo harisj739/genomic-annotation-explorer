@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useGenomicStore } from './store/useGenomicStore'
 import { useDashboardStore } from './store/useDashboardStore'
 import type { PanelKey } from './store/useDashboardStore'
@@ -19,7 +19,8 @@ import { ErrorBanner } from './components/ui/ErrorBanner'
 import { LoadingSpinner } from './components/ui/LoadingSpinner'
 import { Button } from './components/ui/Button'
 
-// Wraps a chart panel with a persistent red hide button in the top-right corner
+// ── HidableChart wrapper ───────────────────────────────────────────────────────
+
 function HidableChart({
   panelKey,
   fullWidth = false,
@@ -50,31 +51,103 @@ function HidableChart({
   )
 }
 
+// ── New File modal ─────────────────────────────────────────────────────────────
+
+function NewFileModal({ onClose }: { onClose: () => void }) {
+  const status = useGenomicStore((s) => s.status)
+
+  // Close as soon as parsing begins
+  useEffect(() => {
+    if (status === 'parsing') onClose()
+  }, [status, onClose])
+
+  // ESC to close
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', handler)
+    return () => document.removeEventListener('keydown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-8 space-y-6 relative"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl leading-none cursor-pointer"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-gray-900 mb-1">Upload a New File</h2>
+          <p className="text-sm text-gray-500">
+            Select a BED, GTF, or GFF file to explore its annotations and visualizations.
+          </p>
+        </div>
+        <UploadZone />
+      </div>
+    </div>
+  )
+}
+
+// ── App ────────────────────────────────────────────────────────────────────────
+
 export default function App() {
-  const { status, fileName, format, stats, error, warnings, reset, savedFiles } = useGenomicStore()
+  const { status, fileName, format, stats, error, warnings, savedFiles } = useGenomicStore()
   const { hidden, resetLayout, aiWidgets } = useDashboardStore()
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
   const [chatOpen, setChatOpen] = useState(false)
   const [vizOpen, setVizOpen] = useState(true)
   const [headerSavedOpen, setHeaderSavedOpen] = useState(false)
+  const [newFileOpen, setNewFileOpen] = useState(false)
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-2xl" aria-hidden>🧬</span>
-            <div>
-              <h1 className="text-base font-bold text-gray-900 leading-tight">Genome Annotation Explorer</h1>
-              <p className="text-xs text-gray-400">Visualize BED, GTF, and GFF files in your browser</p>
+
+          {/* Left: logo + New File + Glossary */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl" aria-hidden>🧬</span>
+              <div>
+                <h1 className="text-base font-bold text-gray-900 leading-tight">Genome Annotation Explorer</h1>
+                <p className="text-xs text-gray-400">Visualize BED, GTF, and GFF files in your browser</p>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-1 border-l border-gray-100 pl-4">
+              {status === 'done' && (
+                <Button variant="ghost" onClick={() => setNewFileOpen(true)}>
+                  New File
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
+                Glossary
+              </Button>
             </div>
           </div>
+
+          {/* Right: Saved Files */}
           <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
-              Glossary
-            </Button>
+            {/* Mobile-only New File + Glossary */}
+            <div className="flex sm:hidden items-center gap-1">
+              {status === 'done' && (
+                <Button variant="ghost" onClick={() => setNewFileOpen(true)}>
+                  New File
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
+                Glossary
+              </Button>
+            </div>
             {savedFiles.length > 0 && (
               <div className="relative">
                 <Button variant="ghost" onClick={() => setHeaderSavedOpen((o) => !o)}>
@@ -93,11 +166,6 @@ export default function App() {
                   />
                 )}
               </div>
-            )}
-            {status === 'done' && (
-              <Button variant="ghost" onClick={reset}>
-                New file
-              </Button>
             )}
           </div>
         </div>
@@ -129,7 +197,7 @@ export default function App() {
           <div className="max-w-2xl mx-auto pt-8 space-y-4">
             <ErrorBanner error={error} warnings={warnings} />
             <div className="text-center">
-              <Button onClick={reset}>Try another file</Button>
+              <Button onClick={() => setNewFileOpen(true)}>Try another file</Button>
             </div>
           </div>
         )}
@@ -221,9 +289,7 @@ export default function App() {
                 {/* Genny-generated widgets */}
                 {aiWidgets.length > 0 && (
                   <section aria-label="Genny widgets">
-                    <h2 className="text-base font-semibold text-gray-700 mb-3">
-                      Genny's Charts
-                    </h2>
+                    <h2 className="text-base font-semibold text-gray-700 mb-3">Genny's Charts</h2>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                       {aiWidgets.map((widget) => (
                         <DynamicChart key={widget.id} widget={widget} />
@@ -237,6 +303,7 @@ export default function App() {
         )}
       </main>
 
+      {newFileOpen && <NewFileModal onClose={() => setNewFileOpen(false)} />}
       <GlossaryDrawer open={glossaryOpen} onClose={() => setGlossaryOpen(false)} />
       <ChatPanel open={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
