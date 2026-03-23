@@ -16,7 +16,7 @@ import { Button } from './components/ui/Button'
 import { FileHistory } from './components/files/FileHistory'
 
 export default function App() {
-  const { status, fileName, format, stats, error, warnings, reset, savedFiles } = useGenomicStore()
+  const { status, fileName, format, stats, error, warnings, reset } = useGenomicStore()
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
 
