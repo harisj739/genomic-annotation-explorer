@@ -124,9 +124,12 @@ export default function App() {
               </div>
             </div>
             <div className="hidden sm:flex items-center gap-1 border-l border-gray-100 pl-4">
-              <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
+              <button
+                onClick={() => setGlossaryOpen(true)}
+                className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 active:bg-orange-700 transition-colors cursor-pointer shadow-sm"
+              >
                 Glossary
-              </Button>
+              </button>
             </div>
           </div>
 
@@ -134,9 +137,12 @@ export default function App() {
           <div className="flex items-center gap-2">
             {/* Mobile-only Glossary */}
             <div className="flex sm:hidden items-center gap-1">
-              <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
+              <button
+                onClick={() => setGlossaryOpen(true)}
+                className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 active:bg-orange-700 transition-colors cursor-pointer shadow-sm"
+              >
                 Glossary
-              </Button>
+              </button>
             </div>
             {status === 'done' && (
               <button
