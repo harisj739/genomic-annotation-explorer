@@ -123,27 +123,31 @@ export default function App() {
                 <p className="text-xs text-gray-400">Visualize BED, GTF, and GFF files in your browser</p>
               </div>
             </div>
-            <div className="hidden sm:flex items-center gap-1 border-l border-gray-100 pl-4">
-              <button
-                onClick={() => setGlossaryOpen(true)}
-                className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 active:bg-orange-700 transition-colors cursor-pointer shadow-sm"
-              >
-                Glossary
-              </button>
-            </div>
+            {status === 'done' && (
+              <div className="hidden sm:flex items-center gap-1 border-l border-gray-100 pl-4">
+                <button
+                  onClick={() => setGlossaryOpen(true)}
+                  className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 active:bg-orange-700 transition-colors cursor-pointer shadow-sm"
+                >
+                  Glossary
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Right: New File + Saved Files */}
           <div className="flex items-center gap-2">
             {/* Mobile-only Glossary */}
-            <div className="flex sm:hidden items-center gap-1">
-              <button
-                onClick={() => setGlossaryOpen(true)}
-                className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 active:bg-orange-700 transition-colors cursor-pointer shadow-sm"
-              >
-                Glossary
-              </button>
-            </div>
+            {status === 'done' && (
+              <div className="flex sm:hidden items-center gap-1">
+                <button
+                  onClick={() => setGlossaryOpen(true)}
+                  className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 active:bg-orange-700 transition-colors cursor-pointer shadow-sm"
+                >
+                  Glossary
+                </button>
+              </div>
+            )}
             {status === 'done' && (
               <button
                 onClick={() => setNewFileOpen(true)}
@@ -213,7 +217,7 @@ export default function App() {
         {status === 'done' && stats && chartData && format && fileName && (
           <>
             {/* File info bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="bg-gradient-to-r from-blue-100 via-teal-50 to-emerald-100 border border-teal-200/60 rounded-xl px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 shadow-sm">
               <div className="flex flex-wrap items-center gap-3">
                 <FileFormatBadge format={format} fileName={fileName} />
                 {hidden.length > 0 && (
