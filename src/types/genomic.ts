@@ -25,6 +25,15 @@ export interface GenomicStats {
 
 export type SupportedFormat = 'BED' | 'GTF' | 'GFF2' | 'GFF3'
 
+export interface SavedFile {
+  id: string
+  fileName: string
+  format: SupportedFormat
+  savedAt: number           // Unix ms timestamp
+  stats: GenomicStats
+  warnings: string[]
+}
+
 // Discriminated union — stubs for future BAM/VCF support
 export type GenomicFile =
   | { kind: 'annotation'; format: SupportedFormat; records: GenomicRecord[] }

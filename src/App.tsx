@@ -13,9 +13,10 @@ import { GlossaryDrawer } from './components/education/GlossaryDrawer'
 import { ErrorBanner } from './components/ui/ErrorBanner'
 import { LoadingSpinner } from './components/ui/LoadingSpinner'
 import { Button } from './components/ui/Button'
+import { FileHistory } from './components/files/FileHistory'
 
 export default function App() {
-  const { status, fileName, format, stats, error, warnings, reset } = useGenomicStore()
+  const { status, fileName, format, stats, error, warnings, reset, savedFiles } = useGenomicStore()
   const chartData = useChartData(stats)
   const [glossaryOpen, setGlossaryOpen] = useState(false)
 
@@ -47,14 +48,17 @@ export default function App() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-8">
         {/* Upload state */}
         {status === 'idle' && (
-          <div className="max-w-2xl mx-auto pt-8">
-            <div className="text-center mb-8">
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Explore your genome annotation</h2>
-              <p className="text-gray-500 text-sm max-w-md mx-auto">
-                Upload a BED, GTF, or GFF file to instantly see statistics and visualizations about the annotated features. Great for learning what's in a genome annotation!
-              </p>
+          <div className="max-w-2xl mx-auto pt-8 space-y-8">
+            <div>
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">Explore your genome annotation</h2>
+                <p className="text-gray-500 text-sm max-w-md mx-auto">
+                  Upload a BED, GTF, or GFF file to instantly see statistics and visualizations about the annotated features. Great for learning what's in a genome annotation!
+                </p>
+              </div>
+              <UploadZone />
             </div>
-            <UploadZone />
+            <FileHistory />
           </div>
         )}
 
@@ -123,6 +127,8 @@ export default function App() {
                     </div>
                   </div>
                 </section>
+
+                <FileHistory defaultOpen={false} />
               </>
             )}
           </>
