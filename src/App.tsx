@@ -114,7 +114,7 @@ export default function App() {
       <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
 
-          {/* Left: logo + New File + Glossary */}
+          {/* Left: logo + Glossary */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-3">
               <span className="text-2xl" aria-hidden>🧬</span>
@@ -124,41 +124,42 @@ export default function App() {
               </div>
             </div>
             <div className="hidden sm:flex items-center gap-1 border-l border-gray-100 pl-4">
-              {status === 'done' && (
-                <Button variant="ghost" onClick={() => setNewFileOpen(true)}>
-                  New File
-                </Button>
-              )}
               <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
                 Glossary
               </Button>
             </div>
           </div>
 
-          {/* Right: Saved Files */}
+          {/* Right: New File + Saved Files */}
           <div className="flex items-center gap-2">
-            {/* Mobile-only New File + Glossary */}
+            {/* Mobile-only Glossary */}
             <div className="flex sm:hidden items-center gap-1">
-              {status === 'done' && (
-                <Button variant="ghost" onClick={() => setNewFileOpen(true)}>
-                  New File
-                </Button>
-              )}
               <Button variant="ghost" onClick={() => setGlossaryOpen(true)}>
                 Glossary
               </Button>
             </div>
+            {status === 'done' && (
+              <button
+                onClick={() => setNewFileOpen(true)}
+                className="inline-flex items-center px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-green-500 hover:bg-green-600 active:bg-green-700 transition-colors cursor-pointer shadow-sm"
+              >
+                New File
+              </button>
+            )}
             {savedFiles.length > 0 && (
               <div className="relative">
-                <Button variant="ghost" onClick={() => setHeaderSavedOpen((o) => !o)}>
+                <button
+                  onClick={() => setHeaderSavedOpen((o) => !o)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-sm font-semibold text-white bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors cursor-pointer shadow-sm"
+                >
                   Saved Files
                   <svg
-                    className={`w-3.5 h-3.5 text-gray-400 transition-transform ${headerSavedOpen ? 'rotate-180' : ''}`}
+                    className={`w-3.5 h-3.5 text-white/80 transition-transform ${headerSavedOpen ? 'rotate-180' : ''}`}
                     fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
                   </svg>
-                </Button>
+                </button>
                 {headerSavedOpen && (
                   <SavedFilesMenu
                     onClose={() => setHeaderSavedOpen(false)}
